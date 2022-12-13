@@ -55,6 +55,10 @@ function App() {
 		return sudoku.currentPuzzle[index] === sudoku.solution[index];
 	}
 
+	function isDefaultCell(index) {
+		return sudoku.puzzle[index] === -1;
+	}
+
 	function determineStartingBackgroundColor(rowIndex, colIndex) {
 		let index = getIndexFromRowAndColumn(rowIndex, colIndex);
 		// if selected cell
@@ -113,11 +117,17 @@ function App() {
 	}
 
 	function handleNumberSubmitted(number) {
+		// If empty
 		if (selectedCell !== -1) {
-			if (sudoku.puzzle[selectedCell] == -1) {
-				
-				setPuzzleValueAtIndex(selectedCell, number);
-				setHighlightedNumber(number);
+
+			// If not a default cell
+			if (sudoku.puzzle[selectedCell] === -1) {
+
+				// If correct solution not already entered
+				if (sudoku.currentPuzzle[selectedCell] !== sudoku.solution[selectedCell]) {
+					setPuzzleValueAtIndex(selectedCell, number);
+					setHighlightedNumber(number);
+				}
 			}
 		}
 	}
@@ -133,6 +143,24 @@ function App() {
 		}
 	}
 
+	function clear() {
+		setSelectedCell(-1);
+		setHighlightedNumber(-1);
+	}
+
+	function removeEntryInSelectedCell() {
+		if (selectedCell > -1 && !isDefaultCell(selectedCell)) {
+
+			let currentPuzzle = sudoku.currentPuzzle;
+			currentPuzzle[selectedCell] = -1;
+			setSudoku(prevState => ({
+				...prevState,
+				currentPuzzle
+
+			}));
+		}
+	}
+
 
 	useEffect(() => {
 		if (!sudoku) {
@@ -144,6 +172,15 @@ function App() {
 			if (Number.isInteger(number)) {
 				handleNumberSubmitted(number);
 			}
+
+			switch (event.key) {
+				case 'Escape':
+					clear()
+					break;
+				case 'Backspace':
+					removeEntryInSelectedCell();
+			}
+
 		}
 
 		document.addEventListener('keydown', keyDownHandler);
