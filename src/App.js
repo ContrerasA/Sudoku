@@ -120,8 +120,7 @@ function App() {
 		// If empty
 		if (selectedCell !== -1) {
 
-			// If not a default cell
-			if (sudoku.puzzle[selectedCell] === -1) {
+			if (isDefaultCell(selectedCell)) {
 
 				// If correct solution not already entered
 				if (sudoku.currentPuzzle[selectedCell] !== sudoku.solution[selectedCell]) {
@@ -235,7 +234,10 @@ function App() {
 			<div className='flex justify-center space-x-3'>
 				{
 					[...Array(9)].map((el, index) => (
-						<div key={index} className="flex justify-center items-center w-10 h-10 text-xl font-bold border rounded-full">{index + 1}</div>
+						<div key={index}
+							className="flex justify-center items-center w-10 h-10 text-xl font-bold border rounded-full"
+							onClick={() => handleNumberSubmitted(index +1)}
+						>{index + 1}</div>
 					)
 					)}
 			</div>
