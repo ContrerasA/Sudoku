@@ -1,8 +1,13 @@
+// Copyright Anthony Contreras only
+
 import './App.css';
 
 // import sudoku from 'sudoku';
 import { getSudoku } from 'sudoku-gen';
 import { useEffect, useState } from 'react';
+import { RxTransparencyGrid } from 'react-icons/rx'
+import {FcCancel} from 'react-icons/fc';
+import {SlClose} from 'react-icons/sl';
 
 
 function App() {
@@ -65,12 +70,11 @@ function App() {
 	function determineStartingBackgroundColor(rowIndex, colIndex) {
 		let index = getIndexFromRowAndColumn(rowIndex, colIndex);
 		// if selected cell
-		
+
 		if (index === selectedCell) {
 			return 'bg-blue-200'
 		}
-		if(gameOptions.checkerboardPattern === false){
-
+		if (gameOptions.checkerboardPattern === false) {
 			return 'bg-gray-100'
 		}
 
@@ -151,6 +155,14 @@ function App() {
 	function clear() {
 		setSelectedCell(-1);
 		setHighlightedNumber(-1);
+	}
+
+	function toggleGridBackground() {
+		let checkerboardPattern = !gameOptions.checkerboardPattern;
+		setGameOptions(prevState => ({
+			...prevState,
+			checkerboardPattern
+		}))
 	}
 
 	function removeEntryInSelectedCell() {
@@ -240,17 +252,28 @@ function App() {
 				</table>
 			</div>
 
+			<div className='flex justify-center items my-4'>
+				<label htmlFor="" className='flex flex-col space-y-2'>
+					<div className='' onClick={() => toggleGridBackground()}>
+					<SlClose color='black' className={`absolute h-8 w-8 ${gameOptions.checkerboardPattern ? 'hidden' : ''}`}/>
+					<RxTransparencyGrid color='black' className='h-8 w-8 rounded-full'/>
+					</div>
+					{/* <input type="checkbox" checked={gameOptions.checkerboardPattern} onChange={() => toggleGridBackground()} /> */}
+				</label>
+			</div>
+
+			{/* On Screen Input Numbers */}
 			<div className='flex justify-center space-x-3'>
 				{
 					[...Array(9)].map((el, index) => (
 						<div key={index}
 							className="flex justify-center items-center w-10 h-10 text-xl font-bold border rounded-full"
-							onClick={() => handleNumberSubmitted(index +1)}
+							onClick={() => handleNumberSubmitted(index + 1)}
 						>{index + 1}</div>
 					)
 					)}
 			</div>
-		</div>
+		</div >
 	);
 }
 
