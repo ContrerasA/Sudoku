@@ -11,7 +11,10 @@ function App() {
 	const [selectedCell, setSelectedCell] = useState(-1);
 	const [sudoku, setSudoku] = useState();
 	const [highlightedNumber, setHighlightedNumber] = useState(-1);
-
+	const [gameOptions, setGameOptions] = useState({
+		difficulty: 'easy',
+		checkerboardPattern: true
+	});
 
 	function convertStringArrayToNumericalArray(inStringArray) {
 		let newArray = [];
@@ -62,9 +65,13 @@ function App() {
 	function determineStartingBackgroundColor(rowIndex, colIndex) {
 		let index = getIndexFromRowAndColumn(rowIndex, colIndex);
 		// if selected cell
-
+		
 		if (index === selectedCell) {
 			return 'bg-blue-200'
+		}
+		if(gameOptions.checkerboardPattern === false){
+
+			return 'bg-gray-100'
 		}
 
 		// Rows 0, 1, 2, 6, 7, 8
@@ -75,7 +82,6 @@ function App() {
 		if ((rowIndex >= 3 && rowIndex <= 5) && (colIndex >= 3 && colIndex <= 5))
 			return 'bg-gray-300'
 
-		return 'bg-gray-100'
 
 	}
 
@@ -182,6 +188,8 @@ function App() {
 
 		}
 
+
+
 		document.addEventListener('keydown', keyDownHandler);
 
 		return () => {
@@ -192,7 +200,7 @@ function App() {
 
 	return (
 		<div className="App cursor-default">
-			<h1 className="flex justify-center">
+			<div className="flex justify-center">
 				<table className='m-4'>
 					<colgroup><col /><col /><col /></colgroup>
 					<colgroup><col /><col /><col /></colgroup>
@@ -230,7 +238,8 @@ function App() {
 							)}
 					</tbody>
 				</table>
-			</h1>
+			</div>
+
 			<div className='flex justify-center space-x-3'>
 				{
 					[...Array(9)].map((el, index) => (
