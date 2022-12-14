@@ -6,18 +6,19 @@ import './App.css';
 import { getSudoku } from 'sudoku-gen';
 import { useEffect, useState } from 'react';
 import { RxTransparencyGrid } from 'react-icons/rx'
-import { SlClose, SlNotebook } from 'react-icons/sl';
+import { SlNote, SlNotebook } from 'react-icons/sl';
 import { AiOutlineClose } from 'react-icons/ai';
+import { TfiLayoutGrid3Alt } from 'react-icons/tfi';
+import { CgLoadbar } from 'react-icons/cg';
+
 
 
 
 function App() {
 
-	const [difficulty, setDifficulty] = useState('easy');
-	const [selectedCell, setSelectedCell] = useState(-1);
+	const [selectedCell, setSelectedCellIndex] = useState(-1);
 	const [sudoku, setSudoku] = useState();
 	const [highlightedNumber, setHighlightedNumber] = useState(-1);
-	const [notes, setNotes] = useState([]);
 	const [gameOptions, setGameOptions] = useState({
 		difficulty: 'easy',
 	});
@@ -25,9 +26,17 @@ function App() {
 		notesEnabled: false,
 		checkerboardPattern: true
 	});
+	const [gameStats, setGameStats] = useState({
+		mistakes: 0,
+		timeStarted: new Date(),
+		timeEnded: null
+	})
+	// TODO: To be used for undos
+	const [stateHistory, setStateHistory] = useState({});
 
 	function GeneratePuzzle() {
-		let rawSudoku = getSudoku(difficulty);
+		let rawSudoku = getSudoku(gameOptions.difficulty);
+		let numberOfCells = 81;
 
 		let splitPuzzle = rawSudoku.puzzle.split('');
 		let splitSolution = rawSudoku.solution.split('');
@@ -35,19 +44,23 @@ function App() {
 		rawSudoku.puzzle = convertStringArrayToNumericalArray(splitPuzzle);
 		rawSudoku.solution = convertStringArrayToNumericalArray(splitSolution);
 
-		// deep clone original puzzle into 'current puzzle'
-		let tempPuzzle = JSON.parse(JSON.stringify(rawSudoku));
-		rawSudoku.currentPuzzle = tempPuzzle.puzzle;
+		let newPuzzle = [];
 
-		// setup notes
-		let tempNotes = [];
-		for (let i = 0; i < 729; i++) {
-			notes[i] = -1;
+		// iterate through all
+		for (let i = 0; i < numberOfCells; i++) {
+			let tempObject = {
+				index: i,
+				row: determineRow(i),
+				column: determineColumn(i),
+				currentVal: rawSudoku.puzzle[i],
+				defaultVal: rawSudoku.puzzle[i],
+				solutionValue: rawSudoku.solution[i],
+				notes: []
+			}
+			newPuzzle.push(tempObject);
 		}
 
-		setNotes(tempNotes)
-
-		setSudoku(rawSudoku);
+		setSudoku(newPuzzle);
 	}
 
 	function convertStringArrayToNumericalArray(inStringArray) {
@@ -73,113 +86,104 @@ function App() {
 		return row * 9 + column;
 	}
 
-	function getCellIndexFromNoteIndex(noteIndex) {
-		return Math.floor(noteIndex / 9);
-	}
+	function determineStartingBackgroundColor(cell) {
 
-	function isIndexCorrect(index) {
-		return sudoku.currentPuzzle[index] === sudoku.solution[index];
-	}
+		if (selectedCell === cell.index)
+			return 'bg-blue-200';
 
-	function isDefaultCell(index) {
-		return sudoku.puzzle[index] !== -1;
-	}
 
-	function determineStartingBackgroundColor(rowIndex, colIndex) {
-		let index = getIndexFromRowAndColumn(rowIndex, colIndex);
-		// if selected cell
-
-		if (index === selectedCell) {
-			return 'bg-blue-200'
-		}
-		if (userOptions.checkerboardPattern === false) {
-			return 'bg-gray-100'
+		if (userOptions.checkerboardPattern) {
+			// Rows 0, 1, 2, 6, 7, 8
+			if ((cell.row <= 2 || cell.row >= 6) && (cell.column <= 2 || cell.column >= 6))
+				return 'bg-gray-300';
+			// Rows 3, 4, 5
+			if ((cell.row >= 3 && cell.row <= 5) && (cell.column >= 3 && cell.column <= 5))
+				return 'bg-gray-300';
 		}
 
-		// Rows 0, 1, 2, 6, 7, 8
-		if ((rowIndex <= 2 || rowIndex >= 6) && (colIndex <= 2 || colIndex >= 6)) {
-			return 'bg-gray-300'
-		}
-		// Rows 3, 4, 5
-		if ((rowIndex >= 3 && rowIndex <= 5) && (colIndex >= 3 && colIndex <= 5))
-			return 'bg-gray-300'
-
-
+		return 'bg-gray-100';
 	}
 
-	function determineBottomBorder(index) {
-		let row = determineRow(index);
-
-		if (row === 2 || row === 5)
+	function determineBottomBorder(cell) {
+		if (cell.row === 2 || cell.row === 5)
 			return "border-b-2 border-black";
 
 		return '';
-
 	}
 
-	function determineTextColor(index) {
-		if (!isIndexCorrect(index))
+	function determineTextColor(cell) {
+		if (cell.currentVal !== cell.solutionValue)
 			return 'text-red-600';
-		else if (sudoku.currentPuzzle[index] === highlightedNumber)
+
+		else if (cell.currentVal === highlightedNumber)
 			return 'text-cyan-500';
 
 		return 'text-black'
 	}
 
-	function determineFontBold(index) {
-		if (sudoku.currentPuzzle[index] === highlightedNumber) {
-			return 'font-bold'
-		}
-		return isIndexCorrect(index) ? 'font-normal' : 'font-bold';
+	function determineFontBold(cell) {
+		if (cell.currentVal === highlightedNumber || (cell.currentVal !== cell.solutionValue))
+			return 'font-bold';
+		return '';
 	}
 
 
-	function setPuzzleValueAtIndex(index, value) {
-		let currentPuzzle = sudoku.currentPuzzle;
-		currentPuzzle[index] = value;
-		setSudoku(prevState => ({
-			...prevState,
-			currentPuzzle
-		}))
+	function setPuzzleValue(cell, number) {
+		let tempPuzzle = JSON.parse(JSON.stringify(sudoku));
+		tempPuzzle[cell.index].currentVal = number;
+		setSudoku(tempPuzzle);
+	}
 
+	function addNoteToCell(cell, number) {
+		let tempPuzzle = JSON.parse(JSON.stringify(sudoku));
+		let cellNotes = tempPuzzle[cell.index].notes;
+		if (!cellNotes.includes(number)) {
+			cellNotes.push(number);
+			cellNotes.sort((a, b) => a - b);
+		}
+		tempPuzzle[cell.index].notes = cellNotes;
+		console.log(tempPuzzle[cell.index]);
+		setSudoku(tempPuzzle);
 	}
 
 	function handleNumberSubmitted(number) {
-		// If empty
+		let cell = sudoku[selectedCell];
+		// Make sure cell is selected
 		if (selectedCell !== -1) {
-
-			if (!isDefaultCell(selectedCell)) {
-
-
-				// If correct solution not already entered
-				if (sudoku.currentPuzzle[selectedCell] !== sudoku.solution[selectedCell]) {
-
-					// If notes are enabled
+			// If not a default cell
+			if (cell.defaultVal === -1) {
+				// If correct solution is not already entered
+				if (cell.currentVal !== cell.solutionValue) {
+					// if notes are enabled
 					if (userOptions.notesEnabled) {
-						console.log(selectedCell * 9 + number);
+						addNoteToCell(cell, number);
 					} else {
-
-						setPuzzleValueAtIndex(selectedCell, number);
+						setPuzzleValue(cell, number);
 						setHighlightedNumber(number);
+						if (number !== cell.solutionValue) {
+							setGameStats(prevState => ({
+								...prevState,
+								mistakes: prevState.mistakes + 1
+							}))
+						}
 					}
 				}
 			}
 		}
 	}
 
-	function handleClickOnCell(index) {
-		setSelectedCell(index);
+	function handleClickOnCell(cell) {
+		setSelectedCellIndex(cell.index);
+		if (cell.currentVal !== -1)
+			setHighlightedNumber(cell.currentVal);
 
-		if (sudoku.currentPuzzle[index] !== -1) {
-			setHighlightedNumber(sudoku.currentPuzzle[index]);
-		} else {
-			// removed to keep last number selected highlighted
-			// setHighlightedNumber(-1);
-		}
+		// Removed to keep last number selected highlighted
+		// else
+		// 	setHighlightedNumber(-1);
 	}
 
 	function clear() {
-		setSelectedCell(-1);
+		setSelectedCellIndex(-1);
 		setHighlightedNumber(-1);
 	}
 
@@ -201,15 +205,11 @@ function App() {
 	}
 
 	function removeEntryInSelectedCell() {
-		if (selectedCell > -1 && !isDefaultCell(selectedCell) && !isIndexCorrect(selectedCell)) {
-
-			let currentPuzzle = sudoku.currentPuzzle;
-			currentPuzzle[selectedCell] = -1;
-			setSudoku(prevState => ({
-				...prevState,
-				currentPuzzle
-
-			}));
+		let cell = sudoku[selectedCell];
+		if (cell.currentVal > -1 && cell.defaultVal === -1 && cell.currentVal !== cell.solutionValue) {
+			let tempPuzzle = JSON.parse(JSON.stringify(sudoku));
+			tempPuzzle[cell.index].currentVal = -1;
+			setSudoku(tempPuzzle);
 		}
 	}
 
@@ -235,8 +235,6 @@ function App() {
 
 		}
 
-
-
 		document.addEventListener('keydown', keyDownHandler);
 
 		return () => {
@@ -247,71 +245,77 @@ function App() {
 
 	return (
 		<div className="App cursor-default select-none">
+
+			<div className='flex justify-center items-center'>
+				<span className='text-4xl'>Co</span>
+				<span className='text-4xl font-semibold text-red-500'>-</span>
+				<span className='text-4xl'>Doku</span>
+			</div>
+
+			{/* Puzzle */}
 			<div className="flex justify-center">
 				<table className='m-4'>
 					<colgroup><col /><col /><col /></colgroup>
 					<colgroup><col /><col /><col /></colgroup>
 					<colgroup><col /><col /><col /></colgroup>
+
 					<tbody className='border-2 border-gray-900'>
 						{
-							sudoku && [...Array(9)].map((row, rowIndex) => (
+							sudoku && [...Array(9)].map((el, rowIndex) => (
 								<tr key={rowIndex}>
 									{
-										[...Array(9)].map((col, colIndex) => {
+										[...Array(9)].map((el, colIndex) => {
 											let index = getIndexFromRowAndColumn(rowIndex, colIndex);
-											// If number originally set
-											let disabled = sudoku.puzzle[index] > -1;
-											// if already correct answer
-											if (disabled === false) {
-												disabled = sudoku.currentPuzzle[index] === sudoku.solution[index];
-											}
-
+											let cell = sudoku[index];
 											return (
-												<td key={colIndex} >
-													<div className={`w-12 h-12 flex justify-center items-center 
-														${determineTextColor(index)}
-														${determineFontBold(index)} 
-														${determineBottomBorder(index)}
-														${determineStartingBackgroundColor(rowIndex, colIndex)}
-														`}
-														onClick={() => handleClickOnCell(index)}
-													>{sudoku.currentPuzzle[index] > -1 ? sudoku.currentPuzzle[index] : ''}</div>
+												<td key={colIndex} className='w-12 h-12 relative' onClick={() => handleClickOnCell(cell)}>
+													{/* Notes */}
+													{
+														cell.currentVal === -1 &&
+														<div className='absolute w-full h-full top-0 left-0'>
+															<div className='flex flex-wrap'>
+																{
+																	[...Array(9)].map((el, noteIndex) => (
+																		<div key={noteIndex} className=' basis-[33%] text-xs w-4 h-4'>{cell.notes.includes(noteIndex + 1) ? noteIndex + 1 : ' '}</div>
+																	))
+																}
+															</div>
+														</div>
+
+													}
+													{/* Current Value */}
+													<div className={`w-full h-full flex justify-center items-center
+														${determineStartingBackgroundColor(cell)}
+														${determineFontBold(cell)}
+														${determineBottomBorder(cell)}
+														${determineTextColor(cell)}
+													`}
+
+													>
+														{cell.currentVal !== -1 ? cell.currentVal : ''}
+													</div>
 												</td>
 											)
-										}
-										)}
+										})
+									}
 								</tr>
-							)
-							)}
+							))}
 					</tbody>
 				</table>
 			</div>
 
-			<div className='flex justify-center items my-4 space-x-10'>
-				{/* Toggle Grid Background */}
-				<div className='' onClick={() => toggleGridBackground()}>
-					<AiOutlineClose color='gray' className={`absolute h-8 w-8 ${userOptions.checkerboardPattern ? 'hidden' : ''}`} />
-					<RxTransparencyGrid color='black' className='h-8 w-8 rounded-full border-2 border-[#bfdbfe]' />
-				</div>
-				{/* Toggle Notes*/}
-				<div className='' onClick={() => toggleUserNotes()}>
-					<AiOutlineClose color='gray' className={`absolute h-8 w-8 ${userOptions.notesEnabled ? 'hidden' : ''}`} />
-					<SlNotebook color='#bfdbfe' className='h-8 w-8 ' />
+			{/* Options */}
+			<div className='flex justify-center items-center space-x-6'>
+
+				{/* Toggle grid background */}
+				<div onClick={() => toggleGridBackground()} className='flex justify-center items-center'>
+					<TfiLayoutGrid3Alt color={userOptions.checkerboardPattern ? '#448ead' : '#9c9c9c'} className='h-6 w-6' />
 				</div>
 
-
-			</div>
-
-			{/* On Screen Input Numbers */}
-			<div className='flex justify-center space-x-3'>
-				{
-					[...Array(9)].map((el, index) => (
-						<div key={index}
-							className="flex justify-center items-center w-10 h-10 text-xl font-bold border rounded-full"
-							onClick={() => handleNumberSubmitted(index + 1)}
-						>{index + 1}</div>
-					)
-					)}
+				{/* Toggle notes */}
+				<div onClick={() => toggleUserNotes()} className='flex justify-center items-center'>
+					<SlNote color={userOptions.notesEnabled ? '#448ead' : '#9c9c9c'} className='h-6 w-6' />
+				</div>
 			</div>
 		</div >
 	);
