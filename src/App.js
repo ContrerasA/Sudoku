@@ -6,7 +6,6 @@ import './App.css';
 import { getSudoku } from 'sudoku-gen';
 import { useEffect, useState } from 'react';
 import { RxTransparencyGrid } from 'react-icons/rx'
-import {FcCancel} from 'react-icons/fc';
 import {SlClose} from 'react-icons/sl';
 
 
@@ -41,7 +40,10 @@ function App() {
 
 		rawSudoku.puzzle = convertStringArrayToNumericalArray(splitPuzzle);
 		rawSudoku.solution = convertStringArrayToNumericalArray(splitSolution);
-		rawSudoku.currentPuzzle = rawSudoku.puzzle;
+
+		let tempPuzzle = JSON.parse(JSON.stringify(rawSudoku));
+		
+		rawSudoku.currentPuzzle = tempPuzzle.puzzle;
 
 		setSudoku(rawSudoku);
 		console.log(rawSudoku.puzzle);
@@ -64,7 +66,9 @@ function App() {
 	}
 
 	function isDefaultCell(index) {
-		return sudoku.puzzle[index] === -1;
+		console.log(sudoku.puzzle[index] !== -1)
+		console.log(sudoku.puzzle[index])
+		return sudoku.puzzle[index] !== -1;
 	}
 
 	function determineStartingBackgroundColor(rowIndex, colIndex) {
@@ -130,7 +134,7 @@ function App() {
 		// If empty
 		if (selectedCell !== -1) {
 
-			if (isDefaultCell(selectedCell)) {
+			if (!isDefaultCell(selectedCell)) {
 
 				// If correct solution not already entered
 				if (sudoku.currentPuzzle[selectedCell] !== sudoku.solution[selectedCell]) {
@@ -166,7 +170,7 @@ function App() {
 	}
 
 	function removeEntryInSelectedCell() {
-		if (selectedCell > -1 && !isDefaultCell(selectedCell)) {
+		if (selectedCell > -1 && !isDefaultCell(selectedCell) && !isIndexCorrect(selectedCell)) {
 
 			let currentPuzzle = sudoku.currentPuzzle;
 			currentPuzzle[selectedCell] = -1;
@@ -240,7 +244,7 @@ function App() {
 														${determineStartingBackgroundColor(rowIndex, colIndex)}
 														`}
 														onClick={() => handleClickOnCell(index)}
-													>{sudoku.puzzle[index] > -1 ? sudoku.puzzle[index] : ''}</div>
+													>{sudoku.currentPuzzle[index] > -1 ? sudoku.currentPuzzle[index] : ''}</div>
 												</td>
 											)
 										}
