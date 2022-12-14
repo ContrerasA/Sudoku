@@ -6,7 +6,9 @@ import './App.css';
 import { getSudoku } from 'sudoku-gen';
 import { useEffect, useState } from 'react';
 import { RxTransparencyGrid } from 'react-icons/rx'
-import {SlClose} from 'react-icons/sl';
+import { SlClose, SlNotebook } from 'react-icons/sl';
+import { AiOutlineClose } from 'react-icons/ai';
+
 
 
 function App() {
@@ -15,10 +17,38 @@ function App() {
 	const [selectedCell, setSelectedCell] = useState(-1);
 	const [sudoku, setSudoku] = useState();
 	const [highlightedNumber, setHighlightedNumber] = useState(-1);
+	const [notes, setNotes] = useState([]);
 	const [gameOptions, setGameOptions] = useState({
 		difficulty: 'easy',
+	});
+	const [userOptions, setUserOptions] = useState({
+		notesEnabled: false,
 		checkerboardPattern: true
 	});
+
+	function GeneratePuzzle() {
+		let rawSudoku = getSudoku(difficulty);
+
+		let splitPuzzle = rawSudoku.puzzle.split('');
+		let splitSolution = rawSudoku.solution.split('');
+
+		rawSudoku.puzzle = convertStringArrayToNumericalArray(splitPuzzle);
+		rawSudoku.solution = convertStringArrayToNumericalArray(splitSolution);
+
+		// deep clone original puzzle into 'current puzzle'
+		let tempPuzzle = JSON.parse(JSON.stringify(rawSudoku));
+		rawSudoku.currentPuzzle = tempPuzzle.puzzle;
+
+		// setup notes
+		let tempNotes = [];
+		for (let i = 0; i < 729; i++) {
+			notes[i] = -1;
+		}
+
+		setNotes(tempNotes)
+
+		setSudoku(rawSudoku);
+	}
 
 	function convertStringArrayToNumericalArray(inStringArray) {
 		let newArray = [];
@@ -29,24 +59,6 @@ function App() {
 		})
 
 		return newArray;
-	}
-
-	function GeneratePuzzle() {
-		let rawSudoku = getSudoku(difficulty);
-
-		let splitPuzzle = rawSudoku.puzzle.split('');
-		let splitSolution = rawSudoku.solution.split('');
-
-
-		rawSudoku.puzzle = convertStringArrayToNumericalArray(splitPuzzle);
-		rawSudoku.solution = convertStringArrayToNumericalArray(splitSolution);
-
-		let tempPuzzle = JSON.parse(JSON.stringify(rawSudoku));
-		
-		rawSudoku.currentPuzzle = tempPuzzle.puzzle;
-
-		setSudoku(rawSudoku);
-		console.log(rawSudoku.puzzle);
 	}
 
 	function determineRow(index) {
@@ -61,13 +73,15 @@ function App() {
 		return row * 9 + column;
 	}
 
+	function getCellIndexFromNoteIndex(noteIndex) {
+		return Math.floor(noteIndex / 9);
+	}
+
 	function isIndexCorrect(index) {
 		return sudoku.currentPuzzle[index] === sudoku.solution[index];
 	}
 
 	function isDefaultCell(index) {
-		console.log(sudoku.puzzle[index] !== -1)
-		console.log(sudoku.puzzle[index])
 		return sudoku.puzzle[index] !== -1;
 	}
 
@@ -78,7 +92,7 @@ function App() {
 		if (index === selectedCell) {
 			return 'bg-blue-200'
 		}
-		if (gameOptions.checkerboardPattern === false) {
+		if (userOptions.checkerboardPattern === false) {
 			return 'bg-gray-100'
 		}
 
@@ -136,10 +150,18 @@ function App() {
 
 			if (!isDefaultCell(selectedCell)) {
 
+
 				// If correct solution not already entered
 				if (sudoku.currentPuzzle[selectedCell] !== sudoku.solution[selectedCell]) {
-					setPuzzleValueAtIndex(selectedCell, number);
-					setHighlightedNumber(number);
+
+					// If notes are enabled
+					if (userOptions.notesEnabled) {
+						console.log(selectedCell * 9 + number);
+					} else {
+
+						setPuzzleValueAtIndex(selectedCell, number);
+						setHighlightedNumber(number);
+					}
 				}
 			}
 		}
@@ -162,10 +184,19 @@ function App() {
 	}
 
 	function toggleGridBackground() {
-		let checkerboardPattern = !gameOptions.checkerboardPattern;
-		setGameOptions(prevState => ({
+		let checkerboardPattern = !userOptions.checkerboardPattern;
+		setUserOptions(prevState => ({
 			...prevState,
 			checkerboardPattern
+		}))
+	}
+
+
+	function toggleUserNotes() {
+		let notes = !userOptions.notesEnabled;
+		setUserOptions(prevState => ({
+			...prevState,
+			notesEnabled: notes
 		}))
 	}
 
@@ -215,7 +246,7 @@ function App() {
 
 
 	return (
-		<div className="App cursor-default">
+		<div className="App cursor-default select-none">
 			<div className="flex justify-center">
 				<table className='m-4'>
 					<colgroup><col /><col /><col /></colgroup>
@@ -256,14 +287,19 @@ function App() {
 				</table>
 			</div>
 
-			<div className='flex justify-center items my-4'>
-				<label htmlFor="" className='flex flex-col space-y-2'>
-					<div className='' onClick={() => toggleGridBackground()}>
-					<SlClose color='black' className={`absolute h-8 w-8 ${gameOptions.checkerboardPattern ? 'hidden' : ''}`}/>
-					<RxTransparencyGrid color='black' className='h-8 w-8 rounded-full'/>
-					</div>
-					{/* <input type="checkbox" checked={gameOptions.checkerboardPattern} onChange={() => toggleGridBackground()} /> */}
-				</label>
+			<div className='flex justify-center items my-4 space-x-10'>
+				{/* Toggle Grid Background */}
+				<div className='' onClick={() => toggleGridBackground()}>
+					<AiOutlineClose color='gray' className={`absolute h-8 w-8 ${userOptions.checkerboardPattern ? 'hidden' : ''}`} />
+					<RxTransparencyGrid color='black' className='h-8 w-8 rounded-full border-2 border-[#bfdbfe]' />
+				</div>
+				{/* Toggle Notes*/}
+				<div className='' onClick={() => toggleUserNotes()}>
+					<AiOutlineClose color='gray' className={`absolute h-8 w-8 ${userOptions.notesEnabled ? 'hidden' : ''}`} />
+					<SlNotebook color='#bfdbfe' className='h-8 w-8 ' />
+				</div>
+
+
 			</div>
 
 			{/* On Screen Input Numbers */}
