@@ -11,9 +11,6 @@ import { AiOutlineClose } from 'react-icons/ai';
 import { TfiLayoutGrid3Alt } from 'react-icons/tfi';
 import { CgLoadbar } from 'react-icons/cg';
 
-
-
-
 function App() {
 
 	const [selectedCell, setSelectedCellIndex] = useState(-1);
@@ -137,10 +134,13 @@ function App() {
 	function addNoteToCell(cell, number) {
 		let tempPuzzle = JSON.parse(JSON.stringify(sudoku));
 		let cellNotes = tempPuzzle[cell.index].notes;
-		if (!cellNotes.includes(number)) {
-			cellNotes.push(number);
-			cellNotes.sort((a, b) => a - b);
+		if (cellNotes.includes(number)) {
+
 		}
+		else {
+			cellNotes.push(number);
+		}
+		cellNotes.sort((a, b) => a - b);
 		tempPuzzle[cell.index].notes = cellNotes;
 		console.log(tempPuzzle[cell.index]);
 		setSudoku(tempPuzzle);
@@ -316,6 +316,21 @@ function App() {
 				<div onClick={() => toggleUserNotes()} className='flex justify-center items-center'>
 					<SlNote color={userOptions.notesEnabled ? '#448ead' : '#9c9c9c'} className='h-6 w-6' />
 				</div>
+
+				{/* Erase  */}
+			</div>
+
+			{/* Onscreen Numbers */}
+			<div className="flex justify-center space-x-3 mt-5">
+				{
+					[...Array(9)].map((el, index) => (
+						<div key={index}
+							className="flex justify-center items-center w-10 h-10 text-xl font-bold border rounded-full"
+							onClick={() => handleNumberSubmitted(index + 1)}
+						>{index + 1}</div>
+					)
+					)
+				}
 			</div>
 		</div >
 	);
