@@ -1,4 +1,4 @@
-// Copyright Anthony Contreras only
+// Copyright Anthony Contreras only Sudoku Video Game
 
 import './App.css';
 
@@ -172,14 +172,17 @@ function App() {
 		}
 	}
 
-	function handleClickOnCell(cell) {
-		setSelectedCellIndex(cell.index);
-		if (cell.currentVal !== -1)
-			setHighlightedNumber(cell.currentVal);
+	function handleClickOnCell(cellIndex) {
+		let cell = sudoku[cellIndex];
 
-		// Removed to keep last number selected highlighted
-		// else
-		// 	setHighlightedNumber(-1);
+		if(cellIndex >=-1 && cellIndex <= 80){
+
+			
+			setSelectedCellIndex(cell.index);
+			if (cell.currentVal !== -1)
+			setHighlightedNumber(cell.currentVal);
+		}
+
 	}
 
 	function clear() {
@@ -213,6 +216,25 @@ function App() {
 		}
 	}
 
+	function handleArrowInput(direction) {
+		switch (direction) {
+			case 'ArrowUp':
+				handleClickOnCell(selectedCell - 9)
+				break;
+			case 'ArrowDown':
+				handleClickOnCell(selectedCell + 9)
+				break;
+			case 'ArrowLeft':
+				handleClickOnCell(selectedCell - 1)
+				break;
+			case 'ArrowRight':
+				handleClickOnCell(selectedCell + 1)
+				break;
+			default:
+				break;
+		}
+	}
+
 
 	useEffect(() => {
 		if (!sudoku) {
@@ -223,7 +245,9 @@ function App() {
 			let number = Number.parseInt(event.key);
 			if (Number.isInteger(number)) {
 				handleNumberSubmitted(number);
+				return;
 			}
+			console.log(event.key)
 
 			switch (event.key) {
 				case 'Escape':
@@ -231,6 +255,22 @@ function App() {
 					break;
 				case 'Backspace':
 					removeEntryInSelectedCell();
+					break;
+				case 'ArrowUp':
+					handleArrowInput(event.key);
+					break;
+				case 'ArrowDown':
+					handleArrowInput(event.key);
+					break;
+				case 'ArrowLeft':
+					handleArrowInput(event.key);
+					break;
+				case 'ArrowRight':
+					handleArrowInput(event.key);
+					break;
+
+				default:
+					break;
 			}
 
 		}
@@ -252,6 +292,10 @@ function App() {
 				<span className='text-4xl'>Doku</span>
 			</div>
 
+			<div className='flex justify-center items-center'>
+				{gameStats.mistakes}
+			</div>
+
 			{/* Puzzle */}
 			<div className="flex justify-center">
 				<table className='m-4'>
@@ -268,7 +312,7 @@ function App() {
 											let index = getIndexFromRowAndColumn(rowIndex, colIndex);
 											let cell = sudoku[index];
 											return (
-												<td key={colIndex} className='w-12 h-12 relative' onClick={() => handleClickOnCell(cell)}>
+												<td key={colIndex} className='w-12 h-12 relative' onClick={() => handleClickOnCell(index)}>
 													{/* Notes */}
 													{
 														cell.currentVal === -1 &&
