@@ -176,8 +176,6 @@ function App() {
 		let cell = sudoku[cellIndex];
 
 		if(cellIndex >=-1 && cellIndex <= 80){
-
-			
 			setSelectedCellIndex(cell.index);
 			if (cell.currentVal !== -1)
 			setHighlightedNumber(cell.currentVal);
